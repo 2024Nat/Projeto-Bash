@@ -2,7 +2,7 @@
 # Sistemas Operacionais
 
 ## Descrição
-Trabalho prático da disciplina de Sistemas Operacionais-fevereiro 2026
+Trabalho prático da disciplina Sistemas Operacionais-fevereiro 2026
 
 ## Conteúdo
 - [Objetivos](#objetivos)
