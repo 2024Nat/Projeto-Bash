@@ -20,6 +20,25 @@
 
 #Menu de cada categoria das opções do menu principal
 
+
+# FUNÇÃO DE INSTALAÇÃO 
+
+INSTALAR_PACOTES() {
+    echo ""
+    echo "========================================================="
+    echo "  Iniciando a instalação de: $@"
+    echo "========================================================="
+    
+ 
+    sudo apt update
+    sudo apt install -y "$@"
+    
+    echo "---------------------------------------------------------"
+    echo " Instalação concluída!"
+    echo "========================================================="
+    sleep 2
+}
+
     MENU_CATEGORIA(){
 
     # 1. Pega todos os argumentos passados e joga numa lista chamada 'args'
@@ -88,12 +107,12 @@
     echo "========================================================="
     echo "LINUX STARTER PACK - Menu Principal"
     echo "========================================================="
-    echo "1) opcao 1"
-    echo "2) opcao 1"
-    echo "3) opcao 1"
-    echo "4) opcao 1"
-    echo "5) opcao 1"
-    echo "6) Sair"
+    echo " 1) Gráficos e Design"
+    echo " 2) Desenvolvimento"
+    echo " 3) Produtividade"
+    echo " 4) Multimídia"
+    echo " 5) Jogos"
+    echo " 6) Sair"
     echo "========================================================="
     read -p "Escolha uma categoria (1-6): " MAIN_CHOICE
 
