@@ -12,9 +12,9 @@ Trabalho prático da disciplina de Sistemas Operacionais-fevereiro 2026
 
 ## Objetivos
 
-- utomatizar o processo de configuração de um ambiente após a formatação ou instalação  do sistema operacional.
+- Otiomizar o processo de configuração de um ambiente após a formatação ou instalação  do sistema operacional.
 
-- Fornecer uma interface via terminal (menu interativo) para que o usuário escolha exatamente o que deseja instalar
+- Fornecer uma interface via terminal (menu) para que o usuário escolha exatamente o que deseja instalar
 
 - O rganizado por categorias (ex: Desenvolvimento, jogos, Multimídia) para facilitar a seleção.
 
@@ -27,7 +27,8 @@ Trabalho prático da disciplina de Sistemas Operacionais-fevereiro 2026
 
 ## Instalação
 
-```# Clone este repositório para a sua máquina local
+```
+# Clone este repositório para a sua máquina local
 git clone https://github.com/2024Nat/Projeto-Bash.git
 
 # Navegue até o diretório do projeto
@@ -39,13 +40,15 @@ chmod +x script.sh
 
 ## Uso
 
-```# Execute o script 
+```
+# Execute o script 
 sudo ./script.sh
 # Após a execução, o menu será exibido na tela. 
 # Digite o número correspondente à categoria ou programa que deseja instalar e pressione ENTER.
 ```
 
-## Autor
+## Autores
 
-Natália Cunha
-João Neri
+- Natália Cunha
+
+- João Neri
