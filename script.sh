@@ -77,13 +77,13 @@ VERIFICAR_INSTALADO() {
         command -v "$PACOTE" >/dev/null 2>&1 && return 0
         return 1
     else
-        # 1. Verifica via dpkg (instalado pelo apt)
+        # verificando via dpkg (instalado pelo apt)
         dpkg -s "$PACOTE" >/dev/null 2>&1 && return 0
 
-        # 2. Verifica se o executável está no PATH (instalado por outros meios)
+        # verificando se o executável está no PATH (instalado por outros meios)
         command -v "$PACOTE" >/dev/null 2>&1 && return 0
 
-        # 3. Alguns pacotes têm nome diferente do executável (ex: nodejs -> node)
+        # Alguns pacotes têm nome diferente do executável (ex: nodejs -> node)
         # Tenta também com "which" como fallback
         which "$PACOTE" >/dev/null 2>&1 && return 0
 
