@@ -34,7 +34,7 @@ sudo -v || exit 1
 sudo apt update -y
 
 # FUNÇÃO DE INSTALAÇÃO VIA APT
-# Para adicionar mais funções de instalação, basta criar novas funções seguindo o mesmo padrão
+
 INSTALAR_APT() {
     for PACOTE in "$@"; do
         if dpkg -s "$PACOTE" >/dev/null 2>&1; then
@@ -64,7 +64,7 @@ INSTALAR_SNAP() {
     fi
 }
 
-# ...existing code...
+
 
 #Verifica se um pacote já está instalado (APT, Snap ou PATH)
 VERIFICAR_INSTALADO() {
@@ -184,7 +184,7 @@ while true; do
 
     case $MAIN in
 
-        # Para adicionar mais programas, basta seguir o padrão "Nome do Programa" "nome-do-pacote" "apt/snap"
+        # Padrão "Nome do Programa" "nome-do-pacote" "apt/snap"
 
         1) MENU_CATEGORIA "GRÁFICOS E DESIGN" \
             "GIMP" "gimp" "apt" \
