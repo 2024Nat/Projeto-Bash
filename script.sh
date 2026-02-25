@@ -64,15 +64,30 @@ INSTALAR_SNAP() {
     fi
 }
 
-#Verifica se um pacote já está instalado (APT ou Snap)
+# ...existing code...
+
+#Verifica se um pacote já está instalado (APT, Snap ou PATH)
 VERIFICAR_INSTALADO() {
     local PACOTE="$1"
     local TIPO="$2"
 
     if [[ "$TIPO" == "snap" || "$TIPO" == "snap-classic" ]]; then
-        snap list 2>/dev/null | grep -q "^$PACOTE "
+        # Verifica via snap list ou se está no PATH
+        snap list 2>/dev/null | grep -q "^$PACOTE " && return 0
+        command -v "$PACOTE" >/dev/null 2>&1 && return 0
+        return 1
     else
-        dpkg -s "$PACOTE" >/dev/null 2>&1
+        # 1. Verifica via dpkg (instalado pelo apt)
+        dpkg -s "$PACOTE" >/dev/null 2>&1 && return 0
+
+        # 2. Verifica se o executável está no PATH (instalado por outros meios)
+        command -v "$PACOTE" >/dev/null 2>&1 && return 0
+
+        # 3. Alguns pacotes têm nome diferente do executável (ex: nodejs -> node)
+        # Tenta também com "which" como fallback
+        which "$PACOTE" >/dev/null 2>&1 && return 0
+
+        return 1
     fi
 }
 
