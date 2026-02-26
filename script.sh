@@ -2,7 +2,7 @@
 
 #LINUX STARTER PACK - CONFIGURADOR PÓS-INSTALAÇÃO
 #Script para automação de instalação de softwares
-#Compatível com sistemas Debian/Ubuntu (APT)
+#Compatível com sistemas Debian/Ubuntu e derivados (apt)
 
 #Tratamento de interrupção pelo usuário (CTRL+C)
 trap 'echo ""; echo "Execução interrompida pelo usuário."; exit 1' INT
@@ -13,7 +13,7 @@ if ! command -v apt >/dev/null 2>&1; then
     exit 1
 fi
 
-#Aqui começa a flag de ajuda do script. Se o usuário passar -h ou --help como argumento, ele exibirá as informações de uso do script.
+# Verificação de ajuda-help
 if [[ "$1" == "-h" || "$1" == "--help" || "$1" == "h" || "$1" == "help" ]]; then
     echo "========================================================="
     echo "LINUX STARTER PACK - Ajuda"
@@ -22,22 +22,17 @@ if [[ "$1" == "-h" || "$1" == "--help" || "$1" == "h" || "$1" == "help" ]]; then
     echo ""
     echo "Script de pós-instalação com menu interativo."
     echo "Permite instalar programas por categoria."
-    echo ""
-    echo "Indicado para sistemas Debian/Ubuntu recém-instalados."
-    echo "O script trata automaticamente todos os pré-requisitos."
     echo "========================================================="
     exit 0
 fi
-
-#Atualização do APT realizada uma única vez antes das instalações
+# Valida o sudo e atualiza os repositórios do APT uma única vez no início.
 sudo -v || exit 1
 sudo apt update -y
 
-# FUNÇÃO DE INSTALAÇÃO VIA APT
-
+# Função para instalar via Snap (com suporte a flags, como --classic)
 INSTALAR_APT() {
     for PACOTE in "$@"; do
-        if dpkg -s "$PACOTE" >/dev/null 2>&1; then
+        if dpkg-query -W -f='${Status}' "$PACOTE" 2>/dev/null | grep -q "install ok installed"; then
             echo "OK $PACOTE ja esta instalado."
         else
             echo "... Instalando $PACOTE..."
@@ -45,18 +40,17 @@ INSTALAR_APT() {
         fi
     done
 }
-
-# FUNÇÃO DE INSTALAÇÃO VIA SNAP
+# Função para instalar via Snap (com suporte a flags, como --classic)
 INSTALAR_SNAP() {
     local PACOTE="$1"
-    local FLAGS="${2:-}"  # segundo argumento opcional, ex: --classic
+    local FLAGS="${2:-}"
 
     if ! command -v snap >/dev/null 2>&1; then
         echo "Instalando snapd..."
         sudo apt install -y snapd
     fi
 
-    if snap list | grep -q "^$PACOTE "; then
+    if snap list "$PACOTE" >/dev/null 2>&1; then
         echo "OK $PACOTE ja esta instalado (snap)."
     else
         echo "... Instalando $PACOTE via snap..."
@@ -64,47 +58,54 @@ INSTALAR_SNAP() {
     fi
 }
 
+# Função responsável por descobrir se um programa existe no computador.
 
-
-#Verifica se um pacote já está instalado (APT, Snap ou PATH)
 VERIFICAR_INSTALADO() {
     local PACOTE="$1"
     local TIPO="$2"
+    local COMANDO="$3"
 
-    if [[ "$TIPO" == "snap" || "$TIPO" == "snap-classic" ]]; then
-        # Verifica via snap list ou se está no PATH
-        snap list 2>/dev/null | grep -q "^$PACOTE " && return 0
-        command -v "$PACOTE" >/dev/null 2>&1 && return 0
-        return 1
-    else
-        # verificando via dpkg (instalado pelo apt)
-        dpkg -s "$PACOTE" >/dev/null 2>&1 && return 0
-
-        # verificando se o executável está no PATH (instalado por outros meios)
-        command -v "$PACOTE" >/dev/null 2>&1 && return 0
-
-        # Alguns pacotes têm nome diferente do executável (ex: nodejs -> node)
-        # Tenta também com "which" como fallback
-        which "$PACOTE" >/dev/null 2>&1 && return 0
-
-        return 1
+    # 1. Tenta achar o comando executável no PATH (Pega APT, Snap, NVM, compilações manuais)
+    if command -v "$COMANDO" >/dev/null 2>&1; then
+        return 0
     fi
+
+    # 2. Tenta achar no registro do APT (dpkg)
+    if dpkg-query -W -f='${Status}' "$PACOTE" 2>/dev/null | grep -q "install ok installed"; then
+        return 0
+    fi
+
+    # 3. Tenta achar no registro do Snap
+    if command -v snap >/dev/null 2>&1 && snap list "$PACOTE" >/dev/null 2>&1; then
+        return 0
+    fi
+
+    # 4. Tenta achar no registro do Flatpak 
+    if command -v flatpak >/dev/null 2>&1 && flatpak list --app | grep -iq "$PACOTE"; then
+        return 0
+    fi
+
+    # Se passou por todos os testes e não achou, então realmente não está instalado
+    return 1
 }
 
-#Menu de cada categoria das opções do menu principal
+# Constrói menus dinâmicos processando Arrays de parâmetros (4 colunas)
+
 MENU_CATEGORIA() {
     local ARGS=("$@")
     local TITULO="${ARGS[0]}"
     local NOMES=()
     local PACOTES=()
     local TIPOS=()
+    local COMANDOS=()
     local TOTAL_ITENS=${#ARGS[@]}
 
-    # Lê triplas: "Nome" "pacote" "apt/snap"
-    for (( i=1; i<TOTAL_ITENS; i+=3 )); do
+    # Lendo de 4 em 4 itens
+    for (( i=1; i<TOTAL_ITENS; i+=4 )); do
         NOMES+=("${ARGS[i]}")
         PACOTES+=("${ARGS[i+1]}")
         TIPOS+=("${ARGS[i+2]}")
+        COMANDOS+=("${ARGS[i+3]}")
     done
 
     local QUANTIDADE=${#NOMES[@]}
@@ -115,7 +116,8 @@ MENU_CATEGORIA() {
         echo ""
 
         for ((I=0; I<QUANTIDADE; I++)); do
-            if VERIFICAR_INSTALADO "${PACOTES[$I]}" "${TIPOS[$I]}"; then
+            
+            if VERIFICAR_INSTALADO "${PACOTES[$I]}" "${TIPOS[$I]}" "${COMANDOS[$I]}"; then
                 echo "$((I+1))) ${NOMES[$I]}  [INSTALADO]"
             else
                 echo "$((I+1))) ${NOMES[$I]}  [NAO INSTALADO]"
@@ -167,7 +169,8 @@ MENU_CATEGORIA() {
     done
 }
 
-#loop do menu principal
+# Mantém o script rodando até o usuário escolher a opção de sair.
+
 while true; do
     clear
     echo "======================================"
@@ -184,43 +187,44 @@ while true; do
 
     case $MAIN in
 
-        # Padrão "Nome do Programa" "nome-do-pacote" "apt/snap"
+        # PADRÃO - "Nome Exibição" "pacote" "tipo" "comando_no_terminal"
 
         1) MENU_CATEGORIA "GRÁFICOS E DESIGN" \
-            "GIMP" "gimp" "apt" \
-            "Inkscape" "inkscape" "apt" \
-            "Blender" "blender" "apt" \
-            "Krita" "krita" "apt" ;;
+            "GIMP" "gimp" "apt" "gimp" \
+            "Inkscape" "inkscape" "apt" "inkscape" \
+            "Blender" "blender" "apt" "blender" \
+            "Krita" "krita" "apt" "krita" ;;
 
         2) MENU_CATEGORIA "DESENVOLVIMENTO" \
-            "Git (Controle de versão)" "git" "apt" \
-            "Python 3" "python3" "apt" \
-            "Node.js" "nodejs" "apt" \
-            "VS Code" "code" "snap-classic" \
-            "Docker" "docker.io" "apt" \
-            "PostgreSQL" "postgresql" "apt" \
-            "Vim" "vim" "apt" \
-            "curl" "curl" "apt" ;;
+            "Git (Controle de versão)" "git" "apt" "git" \
+            "Python 3" "python3" "apt" "python3" \
+            "Node.js" "nodejs" "apt" "node" \
+            "VS Code" "code" "snap-classic" "code" \
+            "Docker" "docker.io" "apt" "docker" \
+            "PostgreSQL" "postgresql" "apt" "psql" \
+            "Vim" "vim" "apt" "vim" \
+            "curl" "curl" "apt" "curl" ;;
 
         3) MENU_CATEGORIA "PRODUTIVIDADE" \
-            "LibreOffice (Pacote Office)" "libreoffice" "apt" \
-            "Evince (Leitor de PDF)" "evince" "apt" \
-            "Thunderbird (E-mail)" "thunderbird" "apt" \
-            "Notion" "notion-snap-reborn" "snap" \
-            "Obsidian (Notas)" "obsidian" "snap-classic" \
-            "Flameshot (Print de tela)" "flameshot" "apt" \
-            "Timeshift (Backup do sistema)" "timeshift" "apt" ;;
+            "LibreOffice (Pacote Office)" "libreoffice" "apt" "libreoffice" \
+            "Evince (Leitor de PDF)" "evince" "apt" "evince" \
+            "Thunderbird (E-mail)" "thunderbird" "apt" "thunderbird" \
+            "Notion" "notion-snap-reborn" "snap" "notion-snap-reborn" \
+            "Obsidian (Notas)" "obsidian" "snap-classic" "obsidian" \
+            "Flameshot (Print de tela)" "flameshot" "apt" "flameshot" \
+            "Timeshift (Backup do sistema)" "timeshift" "apt" "timeshift" ;;
 
         4) MENU_CATEGORIA "MULTIMÍDIA" \
-            "VLC (Player de Vídeo)" "vlc" "apt" \
-            "OBS Studio (Gravação e Live)" "obs-studio" "apt" \
-            "Audacity (Edição de Áudio)" "audacity" "apt" \
-            "Spotify" "spotify" "snap" ;;
+            "VLC (Player de Vídeo)" "vlc" "apt" "vlc" \
+            "OBS Studio (Gravação e Live)" "obs-studio" "apt" "obs" \
+            "Audacity (Edição de Áudio)" "audacity" "apt" "audacity" \
+            "Discord" "discord" "snap" "discord" \
+            "Spotify" "spotify" "snap" "spotify" ;;
 
         5) MENU_CATEGORIA "JOGOS" \
-            "Steam" "steam" "apt" \
-            "Lutris (Gerenciador)" "lutris" "apt" \
-            "RetroArch (Emuladores)" "retroarch" "apt" ;;
+            "Steam" "steam" "apt" "steam" \
+            "Lutris (Gerenciador)" "lutris" "apt" "lutris" \
+            "RetroArch (Emuladores)" "retroarch" "apt" "retroarch" ;;
 
         6) echo "Saindo..."; exit 0 ;;
         *) echo "Opção inválida."; sleep 1 ;;
