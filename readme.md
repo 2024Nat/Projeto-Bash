@@ -12,7 +12,7 @@ Trabalho prático da disciplina Sistemas Operacionais-fevereiro 2026
 
 ## Objetivos
 
-- Otiomizar o processo de configuração de um ambiente após a formatação ou instalação  do sistema operacional.
+- Otimizar o processo de configuração de um ambiente após a formatação ou instalação  do sistema operacional.
 
 - Fornecer uma interface via terminal (menu) para que o usuário escolha exatamente o que deseja instalar
 
